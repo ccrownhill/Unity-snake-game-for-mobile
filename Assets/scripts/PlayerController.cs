@@ -8,8 +8,6 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float maxSpeed = 9f;
 
-    private int reactCount = 0;
-
     public float turnThreshold = 0.1f;
 
     public Grid grid;
@@ -39,6 +37,22 @@ public class PlayerController : MonoBehaviour
         head = GetComponentsInChildren<Transform>()[1];
         head.position = grid.GetCellCenterLocal(grid.LocalToCell(head.position));
         prevGrid = grid.LocalToCell(head.position);
+        StartCoroutine(Mover());
+    }
+
+    private IEnumerator Mover()
+    {
+        while (!gameover)
+        {
+            prevGrid = grid.LocalToCell(head.position);
+            handleInput();
+            head.Translate(movement * grid.cellSize.x);
+            handleSnake();
+            destroyOld();
+            handleCollisionWithTail();
+            detectOutOfBounds();
+            yield return new WaitForSeconds(0.1f);
+        }
     }
 
     private void handleInput()
@@ -95,20 +109,6 @@ public class PlayerController : MonoBehaviour
         if (movement.x == 1) { return; }
         moveQueue.Enqueue('r');
         audio.PlayOneShot(clickSound);
-    }
-
-    private void FixedUpdate()
-    {
-        reactCount++;
-        if (reactCount < 5) { return; }
-        reactCount = 0;
-        prevGrid = grid.LocalToCell(head.position);
-        handleInput();
-        head.Translate(movement * grid.cellSize.x);
-        handleSnake();
-        destroyOld();
-        handleCollisionWithTail();
-        detectOutOfBounds();
     }
 
     private void handleSnake()
