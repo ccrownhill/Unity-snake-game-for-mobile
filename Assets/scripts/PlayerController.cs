@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -29,6 +30,9 @@ public class PlayerController : MonoBehaviour
     public AudioClip deathSound;
     public AudioClip clickSound;
 
+    public float waitTime = 0.1f;
+    private List<Transform> body = new List<Transform>();
+
     void Start()
     {
         audio = GetComponent<AudioSource>();
@@ -48,10 +52,10 @@ public class PlayerController : MonoBehaviour
             handleInput();
             head.Translate(movement * grid.cellSize.x);
             handleSnake();
-            destroyOld();
             handleCollisionWithTail();
+            destroyOld();
             detectOutOfBounds();
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(waitTime);
         }
     }
 
@@ -115,24 +119,23 @@ public class PlayerController : MonoBehaviour
     {
         if (grid.LocalToCell(head.position) == prevGrid) { return;  }
         prevPos = grid.GetCellCenterLocal(prevGrid);
-        Instantiate(bodyPrefab, prevPos, Quaternion.identity, transform);
+        body.Add(Instantiate(bodyPrefab, prevPos, Quaternion.identity, transform).transform);
     }
 
     private void destroyOld()
     {
-        Transform[] bodyParts = GetComponentsInChildren<Transform>();
-        if (bodyParts.Length-2 >= len)
+        if (body.Count > len - 1)
         {
-            Destroy(bodyParts[2].gameObject);
+            Destroy(body[0].gameObject);
+            body.RemoveAt(0);
         }
     }
 
     private void handleCollisionWithTail()
     {
-        Transform[] bodyParts = GetComponentsInChildren<Transform>();
-        for (int i=2; i < bodyParts.Length; i++)
+        for (int i = 0; i < body.Count; i++)
         {
-            if (head.position == bodyParts[i].position)
+            if (head.position == body[i].position)
             {
                 audio.PlayOneShot(deathSound);
                 loader.gameOver();
